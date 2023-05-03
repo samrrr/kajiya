@@ -12,8 +12,8 @@
 
 [![Embark](https://img.shields.io/badge/embark-open%20source-blueviolet.svg)](https://embark.dev)
 [![Embark](https://img.shields.io/badge/discord-ark-%237289da.svg?logo=discord)](https://discord.gg/dAuKfZS)
-[![dependency status](https://deps.rs/repo/github/EmbarkStudios/kajiya/status.svg)](https://deps.rs/repo/github/EmbarkStudios/kajiya)
-[![Build status](https://github.com/EmbarkStudios/kajiya/workflows/CI/badge.svg)](https://github.com/EmbarkStudios/kajiya/actions)
+[![dependency status](https://deps.rs/repo/github/samrrr/kajiya/status.svg)](https://deps.rs/repo/github/samrrr/kajiya)
+[![Build status](https://github.com/samrrr/kajiya/workflows/CI/badge.svg)](https://github.com/samrrr/kajiya/actions)
 </div>
 
 Its general goal is to get as close as possible to path-traced reference at real-time rates in dynamic scenes, without any precomputed light transport, or manually placed light probes.
