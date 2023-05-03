@@ -15,7 +15,7 @@ anyhow = "1.0"
 array-init = "2.0.0"
 blue-noise-sampler = "0.1"
 bytemuck = "1.9.1"
-chrono = "0.4"
+chrono = "0.4.24"
 exr = "1.4.1"
 fern = { version = "0.6", features = ["colored"] }
 glam = { version = "0.18" }
