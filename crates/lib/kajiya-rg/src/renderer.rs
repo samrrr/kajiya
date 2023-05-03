@@ -165,7 +165,7 @@ impl Renderer {
                 .begin_frame(&device.raw, main_cb.raw);
 
             executing_rg = {
-                puffin::profile_scope!("rg begin_execute");
+                profiling::scope!("rg begin_execute");
 
                 rg.begin_execute(
                     RenderGraphExecutionParams {
@@ -182,10 +182,10 @@ impl Renderer {
 
             // Record and submit the main command buffer
             unsafe {
-                puffin::profile_scope!("main cb");
+                profiling::scope!("main cb");
 
                 {
-                    puffin::profile_scope!("rg::record_main_cb");
+                    profiling::scope!("rg::record_main_cb");
                     executing_rg.record_main_cb(main_cb)
                 }
 
@@ -199,7 +199,7 @@ impl Renderer {
                     .reset_fences(std::slice::from_ref(&main_cb.submit_done_fence))
                     .expect("reset_fences");
 
-                puffin::profile_scope!("submit main cb");
+                profiling::scope!("submit main cb");
 
                 // Try to submit the command buffer to the GPU. We might encounter a GPU crash.
                 raw_device
@@ -223,7 +223,7 @@ impl Renderer {
 
         // Execute the rest of the render graph, and submit the presentation command buffer.
         let retired_rg = {
-            puffin::profile_scope!("presentation cb");
+            profiling::scope!("presentation cb");
 
             let presentation_cb = &current_frame.presentation_command_buffer;
 
@@ -275,7 +275,7 @@ impl Renderer {
                     .reset_fences(std::slice::from_ref(&presentation_cb.submit_done_fence))
                     .expect("reset_fences");
 
-                puffin::profile_scope!("submit presentation cb");
+                profiling::scope!("submit presentation cb");
                 raw_device
                     .queue_submit(
                         self.device.universal_queue.raw,
@@ -455,7 +455,10 @@ impl Renderer {
         prepare_render_graph(&mut rg);
         let (rg, temporal_rg_state) = rg.export_temporal();
 
-        self.compiled_rg = Some(rg.compile(&mut self.pipeline_cache));
+        {
+            profiling::scope!("prepare_frame 1 rg.compile");
+            self.compiled_rg = Some(rg.compile(&mut self.pipeline_cache));
+        }
 
         match self.pipeline_cache.prepare_frame(&self.device) {
             Ok(()) => {

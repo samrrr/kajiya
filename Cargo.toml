@@ -37,4 +37,4 @@ debug = 1
 #rspirv-reflect = { path = "../rspirv-reflect" }
 
 #[patch."https://github.com/h3r2tic/gpu-profiler.git"]
-#gpu-profiler = { path = "../gpu_profiler", features = ["use-ash"] }
+#gpu-profiler = { path = "D:/Proj/pt3 rust/gpu-profiler", features = ["use-ash"] }

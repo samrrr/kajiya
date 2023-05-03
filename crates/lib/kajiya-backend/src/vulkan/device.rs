@@ -520,7 +520,7 @@ impl Device {
             // TODO: the wait here protects more than the command buffers (such as dynamic constants),
             // but the fence belongs to command buffers, creating a confusing relationship.
             unsafe {
-                puffin::profile_scope!("wait submit done");
+                profiling::scope!("wait submit done");
 
                 self.raw
                     .wait_for_fences(
@@ -537,7 +537,7 @@ impl Device {
                     .expect("Wait for fence failed.");
             }
 
-            puffin::profile_scope!("release pending resources");
+            profiling::scope!("release pending resources");
             frame0
                 .pending_resource_releases
                 .get_mut()

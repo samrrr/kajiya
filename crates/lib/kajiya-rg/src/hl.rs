@@ -107,6 +107,7 @@ pub struct SimpleRenderPass<'rg, RgPipelineHandle> {
 }
 
 impl<'rg> SimpleRenderPass<'rg, RgComputePipelineHandle> {
+    #[profiling::function]
     pub fn new_compute(mut pass: PassBuilder<'rg>, pipeline_path: &str) -> Self {
         let pipeline = pass.register_compute_pipeline(pipeline_path);
 
@@ -116,6 +117,7 @@ impl<'rg> SimpleRenderPass<'rg, RgComputePipelineHandle> {
         }
     }
 
+    #[profiling::function]
     pub fn new_compute_rust(mut pass: PassBuilder<'rg>, entry_name: &str) -> Self {
         let pipeline = pass.register_compute_pipeline_with_desc(
             ComputePipelineDesc::builder()
@@ -130,6 +132,7 @@ impl<'rg> SimpleRenderPass<'rg, RgComputePipelineHandle> {
         }
     }
 
+    #[profiling::function]
     pub fn dispatch(self, extent: [u32; 3]) {
         let mut state = self.state;
 
@@ -144,6 +147,7 @@ impl<'rg> SimpleRenderPass<'rg, RgComputePipelineHandle> {
         });
     }
 
+    #[profiling::function]
     pub fn dispatch_indirect(mut self, args_buffer: &Handle<Buffer>, args_buffer_offset: u64) {
         let args_buffer_ref = self.pass.read(args_buffer, AccessType::IndirectBuffer);
         let mut state = self.state;
@@ -161,6 +165,7 @@ impl<'rg> SimpleRenderPass<'rg, RgComputePipelineHandle> {
 }
 
 impl<'rg> SimpleRenderPass<'rg, RgRtPipelineHandle> {
+    #[profiling::function]
     pub fn new_rt(
         mut pass: PassBuilder<'rg>,
         rgen: ShaderSource,
@@ -207,6 +212,7 @@ impl<'rg> SimpleRenderPass<'rg, RgRtPipelineHandle> {
         }
     }
 
+    #[profiling::function]
     pub fn trace_rays(mut self, tlas: &Handle<RayTracingAcceleration>, extent: [u32; 3]) {
         let tlas_ref = self.pass.read(tlas, AccessType::AnyShaderReadOther);
         let mut state = self.state;
@@ -226,6 +232,7 @@ impl<'rg> SimpleRenderPass<'rg, RgRtPipelineHandle> {
         });
     }
 
+    #[profiling::function]
     pub fn trace_rays_indirect(
         mut self,
         tlas: &Handle<RayTracingAcceleration>,

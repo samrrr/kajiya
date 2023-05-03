@@ -361,6 +361,7 @@ impl RenderGraph {
         ImportExportToRenderGraph::export(resource, self, access_type)
     }
 
+    #[profiling::function]
     pub fn get_swap_chain(&mut self) -> Handle<Image> {
         let res = GraphRawResourceHandle {
             id: self.resources.len() as u32,

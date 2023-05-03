@@ -88,6 +88,9 @@ impl AppState {
 const APP_STATE_CONFIG_FILE_PATH: &str = "view_state.ron";
 
 fn main() -> anyhow::Result<()> {
+    #[cfg(feature = "profile-with-tracy")]
+    profiling::tracy_client::Client::start();
+
     set_vfs_mount_point("/meshes", "assets/meshes");
 
     let opt = Opt::from_args();

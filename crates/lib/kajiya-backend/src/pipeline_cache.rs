@@ -122,16 +122,20 @@ impl PipelineCache {
             std::collections::hash_map::Entry::Occupied(occupied) => *occupied.get(),
             std::collections::hash_map::Entry::Vacant(vacant) => {
                 let handle = ComputePipelineHandle(self.compute_entries.len());
-                let compile_task = match &desc.source {
-                    ShaderSource::Rust { entry } => CompileRustShader {
-                        entry: entry.clone(),
+                let compile_task ={ 
+                    profiling::scope!("compile_task");
+                    match &desc.source {
+
+                        ShaderSource::Rust { entry } => CompileRustShader {
+                            entry: entry.clone(),
+                        }
+                        .into_lazy(),
+                        ShaderSource::Hlsl { path } => CompileShader {
+                            path: path.clone(),
+                            profile: "cs".to_owned(),
+                        }
+                        .into_lazy(),
                     }
-                    .into_lazy(),
-                    ShaderSource::Hlsl { path } => CompileShader {
-                        path: path.clone(),
-                        profile: "cs".to_owned(),
-                    }
-                    .into_lazy(),
                 };
 
                 self.compute_entries.insert(
@@ -226,6 +230,7 @@ impl PipelineCache {
             .unwrap()
     }
 
+    #[profiling::function]
     fn invalidate_stale_pipelines(&mut self) {
         for entry in self.compute_entries.values_mut() {
             if entry.pipeline.is_some() && entry.lazy_handle.is_stale() {
@@ -249,10 +254,12 @@ impl PipelineCache {
         }
     }
 
+    #[profiling::function]
     pub fn parallel_compile_shaders(
         &mut self,
         device: &Arc<crate::vulkan::device::Device>,
     ) -> anyhow::Result<()> {
+
         // Prepare build tasks for compute
         let compute = self.compute_entries.iter().filter_map(|(&handle, entry)| {
             entry.pipeline.is_none().then(|| {
@@ -285,17 +292,22 @@ impl PipelineCache {
                 })
             })
         });
+    
 
         // Gather all the build tasks together
         let shader_tasks: Vec<_> = compute.chain(raster).chain(rt).collect();
 
         if !shader_tasks.is_empty() {
             // Compile all the things
-            let compiled: Vec<CompileTaskOutput> =
-                smol::block_on(futures::future::try_join_all(shader_tasks))?;
+            let compiled: Vec<CompileTaskOutput>;
+            {
+                profiling::scope!("Compile all the things");
+                compiled=smol::block_on(futures::future::try_join_all(shader_tasks))?;
+            }
 
             // Build pipelines from all compiled shaders
             for compiled in compiled {
+                profiling::scope!("Compiled thing place");
                 match compiled {
                     CompileTaskOutput::Compute { handle, compiled } => {
                         let entry = self.compute_entries.get_mut(&handle).unwrap();
@@ -381,6 +393,7 @@ impl PipelineCache {
         Ok(())
     }
 
+    #[profiling::function]
     pub fn prepare_frame(
         &mut self,
         device: &Arc<crate::vulkan::device::Device>,

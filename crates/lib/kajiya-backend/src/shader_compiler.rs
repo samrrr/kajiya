@@ -2,7 +2,13 @@ use crate::file::LoadFile;
 use anyhow::{anyhow, bail, Context, Result};
 use bytes::Bytes;
 use relative_path::RelativePathBuf;
-use std::{path::PathBuf, sync::Arc};
+use sha2::{Digest, Sha512};
+use std::{
+    fs::{self, File},
+    io::{Read, Write},
+    path::{Path, PathBuf},
+    sync::{Arc, Mutex},
+};
 use turbosloth::*;
 
 pub struct CompiledShader {
@@ -16,11 +22,9 @@ pub struct CompileShader {
     pub profile: String,
 }
 
-#[async_trait]
-impl LazyWorker for CompileShader {
-    type Output = Result<CompiledShader>;
-
-    async fn run(self, ctx: RunContext) -> Self::Output {
+impl CompileShader {
+    #[profiling::function]
+    fn run2(self, ctx: RunContext) -> Result<CompiledShader> {
         let ext = self
             .path
             .extension()
@@ -36,16 +40,23 @@ impl LazyWorker for CompileShader {
         match ext.as_str() {
             "glsl" => unimplemented!(),
             "spv" => {
-                let spirv = LoadFile::new(self.path.clone())?.run(ctx).await?;
+                let spirv = smol::block_on(LoadFile::new(self.path.clone())?.run(ctx))?;
                 Ok(CompiledShader { name, spirv })
             }
             "hlsl" => {
+                profiling::scope!("hlsl");
                 let file_path = self.path.to_str().unwrap().to_owned();
-                let source = shader_prepper::process_file(
-                    &file_path,
-                    &mut ShaderIncludeProvider { ctx },
-                    String::new(),
-                );
+                let source;
+
+                {
+                    profiling::scope!("shader_prepper::process_file");
+                    source = shader_prepper::process_file(
+                        &file_path,
+                        &mut ShaderIncludeProvider { ctx },
+                        String::new(),
+                    );
+                }
+
                 let source = source
                     .map_err(|err| anyhow!("{}", err))
                     .with_context(|| format!("shader path: {:?}", self.path))?;
@@ -56,6 +67,14 @@ impl LazyWorker for CompileShader {
             }
             _ => anyhow::bail!("Unrecognized shader file extension: {}", ext),
         }
+    }
+}
+
+#[async_trait]
+impl LazyWorker for CompileShader {
+    type Output = Result<CompiledShader>;
+    async fn run(self, ctx: RunContext) -> Self::Output {
+        self.run2(ctx)
     }
 }
 
@@ -75,11 +94,20 @@ impl LazyWorker for CompileRayTracingShader {
 
     async fn run(self, ctx: RunContext) -> Self::Output {
         let file_path = self.path.to_str().unwrap().to_owned();
-        let source = shader_prepper::process_file(
-            &file_path,
-            &mut ShaderIncludeProvider { ctx },
-            String::new(),
-        );
+        let source: std::result::Result<
+            Vec<shader_prepper::SourceChunk>,
+            Box<dyn std::error::Error + Send + Sync>,
+        >;
+
+        {
+            profiling::scope!("shader_prepper::process_file");
+            source = shader_prepper::process_file(
+                &file_path,
+                &mut ShaderIncludeProvider { ctx },
+                String::new(),
+            );
+        }
+
         let source = source.map_err(|err| anyhow!("{}", err))?;
 
         let ext = self
@@ -163,6 +191,77 @@ pub fn get_cs_local_size_from_spirv(spirv: &[u32]) -> Result<[u32; 3]> {
     Err(anyhow!("Could not find a ExecutionMode SPIR-V op"))
 }
 
+lazy_static::lazy_static! {
+    static ref SHADERCACHE: Mutex<ShaderCacheSpirv> = Mutex::new(ShaderCacheSpirv::new());
+}
+
+struct ShaderCacheSpirv {
+    //map_data: HashMap<Vec<u8>, Vec<u8>>
+}
+
+lazy_static::lazy_static! {
+static ref FOLDER_PATH: String = String::from("shader_cache");
+}
+
+impl ShaderCacheSpirv {
+    pub fn new() -> ShaderCacheSpirv {
+        if !Path::new(&*FOLDER_PATH).exists() {
+            let _ = fs::create_dir(&*FOLDER_PATH);
+        }
+        return ShaderCacheSpirv {};
+    }
+
+    #[inline(never)]
+    pub fn set(self: &mut ShaderCacheSpirv, hash_source: &[u8], complied_spirv: &[u8]) {
+        let mut hasher: Sha512 = Sha512::new();
+        hasher.update(complied_spirv);
+        let hash_spirv: Vec<u8> = hasher.finalize().to_vec();
+
+        let _ = || -> Result<()> {
+            let mut file = File::create(Self::hash_to_filepath(hash_source))?;
+            file.write_all(&hash_spirv)?;
+            file.write_all(&complied_spirv)?;
+            Ok(())
+        }();
+    }
+
+    #[inline(never)]
+    pub fn get(self: &mut ShaderCacheSpirv, hash_source: &[u8]) -> Result<Vec<u8>> {
+        let mut f = File::open(Self::hash_to_filepath(hash_source))?;
+        let metadata = fs::metadata(Self::hash_to_filepath(hash_source))?;
+        if metadata.len() < 256 / 8 {
+            return Err(anyhow::anyhow!(""));
+        }
+
+        let mut sha512data = vec![0u8; 512 / 8];
+        let mut spirv_data = vec![0u8; (metadata.len() - sha512data.len() as u64) as usize];
+        f.read(&mut sha512data)?;
+        f.read(&mut spirv_data)?;
+
+        let mut hasher: Sha512 = Sha512::new();
+        hasher.update(&spirv_data);
+        let hash_spirv: Vec<u8> = hasher.finalize().to_vec();
+
+        if sha512data != hash_spirv {
+            return Err(anyhow::anyhow!(""));
+        }
+        return Ok(spirv_data);
+    }
+    fn hash_shader_src(source_text: &String) -> Vec<u8> {
+        let mut hasher: Sha512 = Sha512::new();
+        hasher.update(source_text);
+        let result: Vec<u8> = hasher.finalize().to_vec();
+        return result;
+    }
+    fn hash_to_filename(hash: &[u8]) -> String {
+        return hex::encode(hash) + ".bin";
+    }
+    fn hash_to_filepath(hash: &[u8]) -> String {
+        return FOLDER_PATH.clone() + "/" + &Self::hash_to_filename(&hash);
+    }
+}
+
+#[profiling::function]
 fn compile_generic_shader_hlsl_impl(
     name: &str,
     source: &[shader_prepper::SourceChunk],
@@ -173,23 +272,34 @@ fn compile_generic_shader_hlsl_impl(
         source_text += &s.source;
     }
 
+    let source_hash = ShaderCacheSpirv::hash_shader_src(&source_text);
+    let cached_spir = SHADERCACHE.lock().unwrap().get(&source_hash);
+
     let t0 = std::time::Instant::now();
-    let spirv = hassle_rs::compile_hlsl(
-        name,
-        &source_text,
-        "main",
-        target_profile,
-        &[
-            "-spirv",
-            //"-enable-16bit-types",
-            "-fspv-target-env=vulkan1.2",
-            "-WX",      // warnings as errors
-            "-Ges",     // strict mode
-            "-HV 2021", // HLSL version 2021
-        ],
-        &[],
-    )
-    .map_err(|err| anyhow!("{}", err))?;
+    let spirv: Vec<u8>;
+
+    if cached_spir.is_ok() {
+        spirv = cached_spir.unwrap();
+    } else {
+        spirv = hassle_rs::compile_hlsl(
+            name,
+            &source_text,
+            "main",
+            target_profile,
+            &[
+                "-spirv",
+                //"-enable-16bit-types",
+                "-fspv-target-env=vulkan1.2",
+                "-WX",      // warnings as errors
+                "-Ges",     // strict mode
+                "-HV 2021", // HLSL version 2021
+            ],
+            &[],
+        )
+        .map_err(|err| anyhow!("{}", err))?;
+
+        SHADERCACHE.lock().unwrap().set(&source_hash, &spirv);
+    }
 
     log::trace!("dxc took {:?} for {}", t0.elapsed(), name,);
 

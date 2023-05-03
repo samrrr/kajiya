@@ -16,10 +16,12 @@ pub type UiRenderCallback =
     Box<dyn (FnOnce(vk::CommandBuffer) -> Result<(), BackendError>) + 'static>;
 
 impl UiRenderer {
+    #[profiling::function]
     pub fn prepare_render_graph(&mut self, rg: &mut rg::TemporalRenderGraph) -> rg::Handle<Image> {
         self.render_ui(rg)
     }
 
+    #[profiling::function]
     fn render_ui(&mut self, rg: &mut rg::RenderGraph) -> rg::Handle<Image> {
         if let Some((ui_renderer, image)) = self.ui_frame.take() {
             let mut ui_tex = rg.import(image, AccessType::Nothing);

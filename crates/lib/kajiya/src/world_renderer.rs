@@ -951,6 +951,7 @@ impl WorldRenderer {
         self.exposure_state[self.render_mode as usize]
     }
 
+    #[profiling::function]
     pub fn prepare_render_graph(
         &mut self,
         rg: &mut rg::TemporalRenderGraph,

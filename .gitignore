@@ -9,3 +9,4 @@ imgui.ini
 view_state*.ron
 nvngx*
 nvsdk*
+/shader_cache

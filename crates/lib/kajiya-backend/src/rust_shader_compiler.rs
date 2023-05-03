@@ -108,8 +108,8 @@ impl LazyWorker for CompileRustShaderCrate {
         std::thread::spawn(move || -> anyhow::Result<()> {
             log::info!("Building Rust-GPU shaders in the background...");
 
-            if let Err(err) = compile_rust_shader_crate_thread(cancel_rx) {
-                log::error!("Failed to build Rust-GPU shaders. Falling back to the previously compiled ones. Error: {:?}", err);
+            if let Err(_err) = compile_rust_shader_crate_thread(cancel_rx) {
+                //log::error!("Failed to build Rust-GPU shaders. Falling back to the previously compiled ones. Error: {:?}", err);
             }
 
             Ok(())

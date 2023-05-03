@@ -64,9 +64,6 @@ struct MainLoopOptional {
 
     #[cfg(feature = "dear-imgui")]
     imgui: imgui::Context,
-
-    #[cfg(feature = "puffin-server")]
-    _puffin_server: puffin_http::Server,
 }
 
 pub enum WindowScale {
@@ -271,22 +268,11 @@ impl SimpleMainLoop {
         #[cfg(feature = "dear-imgui")]
         imgui_backend.create_graphics_resources(swapchain_extent);
 
-        #[cfg(feature = "puffin-server")]
-        let puffin_server = {
-            let server_addr = format!("0.0.0.0:{}", puffin_http::DEFAULT_PORT);
-            log::info!("Serving profile data on {}", server_addr);
-
-            puffin::set_scopes_on(true);
-            puffin_http::Server::new(&server_addr).unwrap()
-        };
-
         let optional = MainLoopOptional {
             #[cfg(feature = "dear-imgui")]
             imgui_backend,
             #[cfg(feature = "dear-imgui")]
             imgui,
-            #[cfg(feature = "puffin-server")]
-            _puffin_server: puffin_server,
         };
 
         Ok(Self {
@@ -339,13 +325,14 @@ impl SimpleMainLoop {
         let mut running = true;
         while running {
             gpu_profiler::profiler().begin_frame();
-            let gpu_frame_start_ns = puffin::now_ns();
+            // TODO gpu profiler fix when exist rust tracing profiler with manualy send frames ability
+            //let gpu_frame_start_ns = puffin::now_ns();
+            let gpu_frame_start_ns:i64 = 0;
 
-            puffin::profile_scope!("main loop");
-            puffin::GlobalProfiler::lock().new_frame();
+            profiling::scope!("main loop");
 
             event_loop.run_return(|event, _, control_flow| {
-                puffin::profile_scope!("event handler");
+                profiling::scope!("event handler");
 
                 let _ = &render_backend;
                 #[cfg(feature = "dear-imgui")]
@@ -386,7 +373,7 @@ impl SimpleMainLoop {
                 }
             });
 
-            puffin::profile_scope!("MainEventsCleared");
+            profiling::scope!("MainEventsCleared");
 
             // Filter the frame time before passing it to the application and renderer.
             // Fluctuations in frame rendering times cause stutter in animations,
@@ -442,8 +429,9 @@ impl SimpleMainLoop {
             let swapchain_extent = [window.inner_size().width, window.inner_size().height];
 
             let prepared_frame = {
-                puffin::profile_scope!("prepare_frame");
+                profiling::scope!("prepare_frame");
                 rg_renderer.prepare_frame(|rg| {
+                    profiling::scope!("prepare_frame internals");
                     rg.debug_hook = world_renderer.rg_debug_hook.take();
                     let main_img = world_renderer.prepare_render_graph(rg, &frame_desc);
                     let ui_img = ui_renderer.prepare_render_graph(rg);
@@ -471,7 +459,7 @@ impl SimpleMainLoop {
 
             match prepared_frame {
                 Ok(()) => {
-                    puffin::profile_scope!("draw_frame");
+                    profiling::scope!("draw_frame");
                     rg_renderer.draw_frame(
                         |dynamic_constants| {
                             world_renderer.prepare_frame_constants(
@@ -498,6 +486,8 @@ impl SimpleMainLoop {
             if let Some(report) = gpu_profiler::profiler().last_report() {
                 report.send_to_puffin(gpu_frame_start_ns);
             };
+            
+            profiling::finish_frame!();
         }
 
         Ok(())
