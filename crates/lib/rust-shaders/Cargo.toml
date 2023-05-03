@@ -10,5 +10,5 @@ doctest = false
 
 [dependencies]
 rust-shaders-shared = { path = "../rust-shaders-shared" }
-spirv-std = { git = "https://github.com/EmbarkStudios/rust-gpu", rev = "b692ab5afc7fbdb4599b42ab3e0328dc7e8e0e97", features = ["glam"] }
-macaw = { version = "0.15", default-features = false, features = ["libm"] }
+spirv-std = "0.7.0"
+macaw = { version = "0.18.2", default-features = false, features = ["libm"] }

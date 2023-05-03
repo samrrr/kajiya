@@ -1,4 +1,4 @@
-use macaw::{const_mat3, Mat3, Vec3};
+use macaw::{Mat3, Vec3};
 
 pub fn lin_srgb_to_ycbcr(col: Vec3) -> Vec3 {
     // NOTE! This matrix needs to be transposed from the HLSL equivalent.

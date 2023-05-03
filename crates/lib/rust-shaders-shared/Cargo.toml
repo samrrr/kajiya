@@ -8,8 +8,9 @@ test = false
 doctest = false
 
 [dependencies]
-macaw = { version = "0.15", default-features = false, features = ["libm"] }
+macaw = { version = "0.18.2", default-features = false, features = ["libm"] }
 num-traits = { version = "0.2.14", default-features = false, features = ["libm"] }
+glam = "0.22.0"
 
 [target.'cfg(target_arch = "spirv")'.dependencies]
-spirv-std = { git = "https://github.com/EmbarkStudios/rust-gpu", rev = "b692ab5afc7fbdb4599b42ab3e0328dc7e8e0e97", features = ["glam"] }
+spirv-std = "0.7.0"

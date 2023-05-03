@@ -994,8 +994,9 @@ dependencies = [
 
 [[package]]
 name = "dolly"
-version = "0.3.0"
-source = "git+https://github.com/h3r2tic/dolly.git?rev=0276fb4b5fe2e11c70919af7dbbcd645711c8f48#0276fb4b5fe2e11c70919af7dbbcd645711c8f48"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "817a57da6082ade97c55fc61b9c0b76803c694f265bb74e9e3ac1f44b829087d"
 dependencies = [
  "glam",
 ]
@@ -1368,9 +1369,9 @@ checksum = "f0a01e0497841a3b2db4f8afa483cce65f7e96a3498bd6c541734792aeac8fe7"
 
 [[package]]
 name = "glam"
-version = "0.18.0"
+version = "0.22.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "525a3e490ba77b8e326fb67d4b44b4bd2f920f44d4cc73ccec50adc68e3bee34"
+checksum = "12f597d56c1bd55a811a1be189459e8fad2bbc272616375602443bdfb37fa774"
 dependencies = [
  "num-traits 0.2.14",
  "serde",
@@ -2014,9 +2015,9 @@ dependencies = [
 
 [[package]]
 name = "macaw"
-version = "0.15.0"
+version = "0.18.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "96ea524ece39c817dc5478897fceec1fb389eaaed9516813f1e51b21cb272239"
+checksum = "5b35f1b29818f744cf92e85476f21fc5502fcb388b20faa7ab70200febd9e0ba"
 dependencies = [
  "glam",
  "num-traits 0.2.14",
@@ -2843,6 +2844,7 @@ dependencies = [
 name = "rust-shaders-shared"
 version = "0.1.0"
 dependencies = [
+ "glam",
  "macaw",
  "num-traits 0.2.14",
  "spirv-std",
@@ -3143,32 +3145,34 @@ dependencies = [
 
 [[package]]
 name = "spirv-std"
-version = "0.4.0-alpha.12"
-source = "git+https://github.com/EmbarkStudios/rust-gpu?rev=b692ab5afc7fbdb4599b42ab3e0328dc7e8e0e97#b692ab5afc7fbdb4599b42ab3e0328dc7e8e0e97"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3197bd4c021c2dfc0f9dfb356312c8f7842d972d5545c308ad86422c2e2d3e66"
 dependencies = [
  "bitflags",
  "glam",
  "num-traits 0.2.14",
  "spirv-std-macros",
- "spirv-types",
+ "spirv-std-types",
 ]
 
 [[package]]
 name = "spirv-std-macros"
-version = "0.4.0-alpha.12"
-source = "git+https://github.com/EmbarkStudios/rust-gpu?rev=b692ab5afc7fbdb4599b42ab3e0328dc7e8e0e97#b692ab5afc7fbdb4599b42ab3e0328dc7e8e0e97"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bbaffad626ab9d3ac61c4b74b5d51cb52f1939a8041d7ac09ec828eb4ad44d72"
 dependencies = [
- "heck",
  "proc-macro2",
  "quote",
- "spirv-types",
+ "spirv-std-types",
  "syn 1.0.109",
 ]
 
 [[package]]
-name = "spirv-types"
-version = "0.4.0-alpha.12"
-source = "git+https://github.com/EmbarkStudios/rust-gpu?rev=b692ab5afc7fbdb4599b42ab3e0328dc7e8e0e97#b692ab5afc7fbdb4599b42ab3e0328dc7e8e0e97"
+name = "spirv-std-types"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ab83875e851bc803c687024d2d950730f350c0073714b95b3a6b1d22e9eac42a"
 
 [[package]]
 name = "spirv_headers"
@@ -3181,8 +3185,8 @@ dependencies = [
 
 [[package]]
 name = "splines"
-version = "4.1.0"
-source = "git+https://github.com/h3r2tic/splines.git?rev=aa0ea829b025d908c8621207764601cb6b059911#aa0ea829b025d908c8621207764601cb6b059911"
+version = "4.2.0"
+source = "git+https://github.com/h3r2tic/splines.git?rev=decd85dba2e72b57d2cc4762eed3b11b58c9555c#decd85dba2e72b57d2cc4762eed3b11b58c9555c"
 dependencies = [
  "glam",
 ]
